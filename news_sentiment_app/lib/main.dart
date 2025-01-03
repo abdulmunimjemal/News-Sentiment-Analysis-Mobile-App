@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dart_sentiment/dart_sentiment.dart';
 
 void main() {
   runApp(const NewsSentimentAnalyzer());
@@ -31,25 +32,47 @@ class _SentimentAnalyzerBodyState extends State<SentimentAnalyzerBody> {
   bool isAnalyzing = false;
 
   final TextEditingController _textController = TextEditingController();
+  final Sentiment _sentiment = Sentiment();
 
-  void analyzeSentiment() async {
+  void analyzeSentiment() {
     if (headlineText != null && headlineText!.isNotEmpty) {
       setState(() {
         isAnalyzing = true;
       });
 
-      // Simulate sentiment analysis delay (replace with actual logic)
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        // Perform sentiment analysis
+        final result = _sentiment.analysis(headlineText!, emoji: true);
+        final score = result['score'] as int?;
 
-      setState(() {
-        isAnalyzing = false;
-        sentimentResult = "Positive"; // Example sentiment result
-      });
+        setState(() {
+          isAnalyzing = false;
+          sentimentResult = _interpretScore(score);
+        });
+      } catch (e) {
+        setState(() {
+          isAnalyzing = false;
+          sentimentResult = "Error analyzing sentiment. $e";
+        });
+      }
     } else {
       setState(() {
         sentimentResult = "Please enter a headline first.";
       });
     }
+  }
+
+  String _interpretScore(int? score) {
+    if (score == null) return "No sentiment detected.";
+    if (score > 0) return "Positive Sentiment";
+    if (score < 0) return "Negative Sentiment";
+    return "Neutral Sentiment";
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
   }
 
   @override
@@ -66,7 +89,6 @@ class _SentimentAnalyzerBodyState extends State<SentimentAnalyzerBody> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Header
             const Text(
               'News Sentiment Analyzer',
               style: TextStyle(
@@ -83,12 +105,6 @@ class _SentimentAnalyzerBodyState extends State<SentimentAnalyzerBody> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Cool Fading Description Text
-            FadeTransitionText(
-              text: "Analyze the sentiment of news articles effortlessly.",
-            ),
-            const SizedBox(height: 40),
 
             // Text Input Box
             Padding(
@@ -163,32 +179,6 @@ class _SentimentAnalyzerBodyState extends State<SentimentAnalyzerBody> {
                 ),
               ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class FadeTransitionText extends StatelessWidget {
-  final String text;
-
-  const FadeTransitionText({Key? key, required this.text}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder(
-      tween: Tween<double>(begin: 0, end: 1),
-      duration: const Duration(seconds: 2),
-      builder: (context, double opacity, child) {
-        return Opacity(opacity: opacity, child: child);
-      },
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w400,
-          color: Colors.white70,
         ),
       ),
     );
